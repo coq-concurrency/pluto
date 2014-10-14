@@ -1,3 +1,7 @@
+Makefile
+extraction/*.ml
+extraction/*.mli
+*.bak
 *.vo
 *.glob
 *.v.d
