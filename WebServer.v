@@ -3,8 +3,9 @@ Require Import Coq.Lists.List.
 Require Import Coq.Strings.Ascii.
 Require Import Coq.Strings.String.
 Require Import ErrorHandlers.All.
-Require Import FunCombinators.All.
-Require Import LString.LString.
+Require Import FunctionNinjas.All.
+Require Import Iterable.All.
+Require Import LString.All.
 Require Import Concurrency.Computation.
 Require Import Concurrency.Events.
 Require Import Concurrency.StdLib.
@@ -23,7 +24,24 @@ Module MimeType.
 
   Definition to_string (mime_type : t) : LString.t :=
     type mime_type ++ LString.s "/" ++ sub_type mime_type.
+
+  Definition of_extension (extension : LString.t) : t :=
+    if LString.eqb extension (LString.s "html") then
+      New (LString.s "text") (LString.s "html")
+    else if LString.eqb extension (LString.s "css") then
+      New (LString.s "text") (LString.s "css")
+    else if LString.eqb extension (LString.s "js") then
+      New (LString.s "text") (LString.s "javascript")
+    else if LString.eqb extension (LString.s "png") then
+      New (LString.s "image") (LString.s "png")
+    else
+      New (LString.s "text") (LString.s "plain").
 End MimeType.
+
+Module FileName.
+  Definition extension (file_name : LString.t) : LString.t :=
+    List.last (LString.split file_name ".") (LString.s "").
+End FileName.
 
 Module Request.
   (** The kind of HTTP method. *)
@@ -186,18 +204,18 @@ Module Answer.
     status := Status.OK;
     headers := [
       Header.New Header.Kind.ContentType (MimeType.to_string mime_type);
-      Header.New Header.Kind.ContentLength (LString.of_nat_10 @@ List.length content);
+      Header.New Header.Kind.ContentLength (LString.of_n 10 12 @@ Iterable.length content);
       Header.New Header.Kind.Server (LString.s "Coq")];
     body := content |}.
 
   Definition error : t :=
     let mime_type := MimeType.New (LString.s "text") (LString.s "plain") in
-    let content := LString.s "404: not found." in
+    let content := LString.s "Error 404 (not found)." in
     {|
       status := Status.NotFound;
       headers := [
         Header.New Header.Kind.ContentType (MimeType.to_string mime_type);
-        Header.New Header.Kind.ContentLength (LString.of_nat_10 @@ List.length content);
+        Header.New Header.Kind.ContentLength (LString.of_n 10 12 @@ Iterable.length content);
         Header.New Header.Kind.Server (LString.s "Coq")];
       body := content |}.
 End Answer.
@@ -220,7 +238,7 @@ Definition handle_client (website_dir : LString.t) (client : ClientSocketId.t)
         let answer := Answer.to_string @@ match content with
           | None => Answer.error
           | Some content =>
-            let mime_type := MimeType.New (LString.s "text") (LString.s "html") in
+            let mime_type := MimeType.of_extension @@ FileName.extension url in
             Answer.ok mime_type content
           end in
         ClientSocket.write client answer (fun _ =>
