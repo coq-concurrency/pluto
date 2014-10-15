@@ -18,7 +18,7 @@ RUN opam repo add coq https://github.com/coq/opam-coq-repo.git
 
 # Unstable dependencies
 RUN v=4 opam repo add coq-unstable https://github.com/coq/opam-coq-repo-unstable.git
-RUN opam install -y coq-error-handlers coq-fun-combinators coq-concurrency
+RUN opam install -y coq-error-handlers coq-function-ninjas coq-concurrency
 
 # Build
 ADD . /root/coq-web-server

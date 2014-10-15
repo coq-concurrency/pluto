@@ -17,15 +17,12 @@ Local Open Scope char.
 Local Open Scope list.
 
 Module MimeType.
-  Inductive t : Set :=
-  | TextPlain : t
-  | TextHtml : t.
+  Record t : Set := New {
+    type : LString.t;
+    sub_type : LString.t }.
 
   Definition to_string (mime_type : t) : LString.t :=
-    match mime_type with
-    | TextPlain => LString.s "text/plain"
-    | TextHtml => LString.s "text/html"
-    end.
+    type mime_type ++ LString.s "/" ++ sub_type mime_type.
 End MimeType.
 
 Module Request.
@@ -194,11 +191,12 @@ Module Answer.
     body := content |}.
 
   Definition error : t :=
+    let mime_type := MimeType.New (LString.s "text") (LString.s "plain") in
     let content := LString.s "404: not found." in
     {|
       status := Status.NotFound;
       headers := [
-        Header.New Header.Kind.ContentType (MimeType.to_string MimeType.TextPlain);
+        Header.New Header.Kind.ContentType (MimeType.to_string mime_type);
         Header.New Header.Kind.ContentLength (LString.of_nat_10 @@ List.length content);
         Header.New Header.Kind.Server (LString.s "Coq")];
       body := content |}.
@@ -221,7 +219,9 @@ Definition handle_client (website_dir : LString.t) (client : ClientSocketId.t)
         File.read file_name (fun content =>
         let answer := Answer.to_string @@ match content with
           | None => Answer.error
-          | Some content => Answer.ok MimeType.TextHtml content
+          | Some content =>
+            let mime_type := MimeType.New (LString.s "text") (LString.s "html") in
+            Answer.ok mime_type content
           end in
         ClientSocket.write client answer (fun _ =>
         ClientSocket.close client (fun is_closed =>
