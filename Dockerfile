@@ -17,7 +17,7 @@ RUN apt-get install -y inotify-tools
 RUN opam repo add coq https://github.com/coq/opam-coq-repo.git
 
 # Unstable dependencies
-RUN v=7 opam repo add coq-unstable https://github.com/coq/opam-coq-repo-unstable.git
+RUN v=9 opam repo add coq-unstable https://github.com/coq/opam-coq-repo-unstable.git
 RUN opam install -y coq-error-handlers coq-function-ninjas coq-concurrency coq-iterable
 
 # Build

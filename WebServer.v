@@ -34,6 +34,8 @@ Module MimeType.
       New (LString.s "text") (LString.s "javascript")
     else if LString.eqb extension (LString.s "png") then
       New (LString.s "image") (LString.s "png")
+    else if LString.eqb extension (LString.s "svg") then
+      New (LString.s "image") (LString.s "svg+xml")
     else
       New (LString.s "text") (LString.s "plain").
 End MimeType.
@@ -220,6 +222,15 @@ Module Answer.
       body := content |}.
 End Answer.
 
+Definition close_client (client : ClientSocketId.t) : C.t [] unit :=
+  ClientSocket.close client (fun is_closed =>
+  let message :=
+    if is_closed then
+      LString.s "Client closed."
+    else
+      LString.s "Client cannot be closed." in
+  Log.write message (fun _ => C.Ret tt)).
+
 Definition handle_client (website_dir : LString.t) (client : ClientSocketId.t)
   : C.t [] unit :=
   do! Log.write (LString.s "Client connected.") (fun _ => C.Ret tt) in
@@ -241,14 +252,13 @@ Definition handle_client (website_dir : LString.t) (client : ClientSocketId.t)
             let mime_type := MimeType.of_extension @@ FileName.extension url in
             Answer.ok mime_type content
           end in
-        ClientSocket.write client answer (fun _ =>
-        ClientSocket.close client (fun is_closed =>
-          let message := 
-            if is_closed then
-              LString.s "Client closed."
-            else
-              LString.s "Client cannot be closed." in
-            Log.write message (fun _ => C.Ret tt)))) in
+        ClientSocket.write client answer (fun is_success =>
+          do! if negb is_success then
+            let message := LString.s "Answer failed to be sent for " ++ url in
+            Log.write message (fun _ => C.Ret tt)
+          else
+            C.Ret tt in
+          close_client client)) in
       C.Ret @@ Some []
     | inr _ => C.Ret @@ Some read
     end
