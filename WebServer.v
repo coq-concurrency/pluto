@@ -19,15 +19,29 @@ Local Open Scope string.
 Local Open Scope char.
 Local Open Scope list.
 
-(** Close a client. *)
-(*Definition close_client (client : ClientSocketId.t) : C.t [] unit :=
-  ClientSocket.close client (fun is_closed =>
-  let message :=
-    if is_closed then
-      LString.s "Client closed."
-    else
-      LString.s "Client cannot be closed." in
-  Log.write message (fun _ => C.Ret tt)).*)
+(** Read a file, trying to infer the implicit "index.html". *)
+Definition read_file (client : ClientSocketId.t) (file_name : LString.t)
+  (continuation : option (MimeType.t * LString.t) -> C.t [] unit)
+  : C.t [] unit :=
+  do! Log.write (LString.s "Reading the file: '" ++ file_name ++ LString.s "'")
+    (fun _ => C.Ret tt) in
+  File.read file_name (fun content =>
+  match content with
+  | None =>
+    let file_name := file_name ++ LString.s "index.html" in
+    do! Log.write (LString.s "Reading instead the file: '" ++ file_name ++
+      LString.s "'") (fun _ => C.Ret tt) in
+    File.read file_name (fun content =>
+    match content with
+    | None => continuation None
+    | Some content =>
+      let mime_type := MimeType.of_extension @@ FileName.extension file_name in
+      continuation @@ Some (mime_type, content)
+    end)
+  | Some content =>
+    let mime_type := MimeType.of_extension @@ FileName.extension file_name in
+    continuation @@ Some (mime_type, content)
+  end).
 
 (** Answer to a client. *)
 Definition handle_client (website_dir : LString.t) (client : ClientSocketId.t)
@@ -42,16 +56,10 @@ Definition handle_client (website_dir : LString.t) (client : ClientSocketId.t)
     let read := read ++ line in
     match Request.parse read with
     | inl (Request.New (Request.Method.Get, url, protocol) headers) =>
-      do!
-        let file_name := website_dir ++ url in
-        do! Log.write (LString.s "Reading file: '" ++ file_name ++
-          LString.s "'") (fun _ => C.Ret tt) in
-        File.read file_name (fun content =>
-        let answer := Answer.to_string @@ match content with
+      do! read_file client (website_dir ++ url) (fun reading =>
+        let answer := Answer.to_string @@ match reading with
           | None => Answer.error
-          | Some content =>
-            let mime_type := MimeType.of_extension @@ FileName.extension url in
-            Answer.ok mime_type content
+          | Some (mime_type, content) => Answer.ok mime_type content
           end in
         ClientSocket.write client answer (fun is_success =>
           if negb is_success then
@@ -59,7 +67,8 @@ Definition handle_client (website_dir : LString.t) (client : ClientSocketId.t)
             Log.write message (fun _ => C.Ret tt)
           else
             C.Ret tt)) in
-      C.Ret @@ Some [] (* We continue to listen, starting again with empty data. *)
+      (* We continue to listen, starting again with empty data. *)
+      C.Ret @@ Some []
     | inr err => C.Ret @@ Some read (* We wait for more data. *)
     end
   end).
