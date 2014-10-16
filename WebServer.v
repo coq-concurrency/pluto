@@ -19,30 +19,6 @@ Local Open Scope string.
 Local Open Scope char.
 Local Open Scope list.
 
-(** Read a file, trying to infer the implicit "index.html". *)
-Definition read_file (client : ClientSocketId.t) (file_name : LString.t)
-  (continuation : option (MimeType.t * LString.t) -> C.t [] unit)
-  : C.t [] unit :=
-  do! Log.write (LString.s "Reading the file: '" ++ file_name ++ LString.s "'")
-    (fun _ => C.Ret tt) in
-  File.read file_name (fun content =>
-  match content with
-  | None =>
-    let file_name := file_name ++ LString.s "index.html" in
-    do! Log.write (LString.s "Reading instead the file: '" ++ file_name ++
-      LString.s "'") (fun _ => C.Ret tt) in
-    File.read file_name (fun content =>
-    match content with
-    | None => continuation None
-    | Some content =>
-      let mime_type := MimeType.of_extension @@ FileName.extension file_name in
-      continuation @@ Some (mime_type, content)
-    end)
-  | Some content =>
-    let mime_type := MimeType.of_extension @@ FileName.extension file_name in
-    continuation @@ Some (mime_type, content)
-  end).
-
 (** Answer to a client. *)
 Definition handle_client (website_dir : LString.t) (client : ClientSocketId.t)
   : C.t [] unit :=
@@ -56,10 +32,20 @@ Definition handle_client (website_dir : LString.t) (client : ClientSocketId.t)
     let read := read ++ line in
     match Request.parse read with
     | inl (Request.New (Request.Method.Get, url, protocol) headers) =>
-      do! read_file client (website_dir ++ url) (fun reading =>
-        let answer := Answer.to_string @@ match reading with
+      let file_name := website_dir ++ url in
+      let last_character := List.last file_name "/" in
+      let file_name := match last_character with
+        | "/" => file_name ++ LString.s "index.html"
+        | _ => file_name
+        end in
+      do! Log.write (LString.s "Reading the file: '" ++ file_name ++ LString.s "'")
+        (fun _ => C.Ret tt) in
+      do! File.read file_name (fun content =>
+        let answer := Answer.to_string @@ match content with
           | None => Answer.error
-          | Some (mime_type, content) => Answer.ok mime_type content
+          | Some content =>
+            let mime_type := MimeType.of_extension @@ FileName.extension file_name in
+            Answer.ok mime_type content
           end in
         ClientSocket.write client answer (fun is_success =>
           if negb is_success then
