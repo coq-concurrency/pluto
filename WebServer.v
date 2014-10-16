@@ -20,14 +20,14 @@ Local Open Scope char.
 Local Open Scope list.
 
 (** Close a client. *)
-Definition close_client (client : ClientSocketId.t) : C.t [] unit :=
+(*Definition close_client (client : ClientSocketId.t) : C.t [] unit :=
   ClientSocket.close client (fun is_closed =>
   let message :=
     if is_closed then
       LString.s "Client closed."
     else
       LString.s "Client cannot be closed." in
-  Log.write message (fun _ => C.Ret tt)).
+  Log.write message (fun _ => C.Ret tt)).*)
 
 (** Answer to a client. *)
 Definition handle_client (website_dir : LString.t) (client : ClientSocketId.t)
@@ -35,9 +35,11 @@ Definition handle_client (website_dir : LString.t) (client : ClientSocketId.t)
   do! Log.write (LString.s "Client connected.") (fun _ => C.Ret tt) in
   ClientSocket.read client [] (fun read request =>
   match request with
-  | None => C.Ret None
+  | None =>
+    do! Log.write (LString.s "The client is closed.") (fun _ => C.Ret tt) in
+    C.Ret None (* We stop to listen to the socket in case of error. *)
   | Some line =>
-    let read := line ++ read in
+    let read := read ++ line in
     match Request.parse read with
     | inl (Request.New (Request.Method.Get, url, protocol) headers) =>
       do!
@@ -52,14 +54,13 @@ Definition handle_client (website_dir : LString.t) (client : ClientSocketId.t)
             Answer.ok mime_type content
           end in
         ClientSocket.write client answer (fun is_success =>
-          do! if negb is_success then
+          if negb is_success then
             let message := LString.s "Answer failed to be sent for " ++ url in
             Log.write message (fun _ => C.Ret tt)
           else
-            C.Ret tt in
-          close_client client)) in
-      C.Ret @@ Some []
-    | inr _ => C.Ret @@ Some read
+            C.Ret tt)) in
+      C.Ret @@ Some [] (* We continue to listen, starting again with empty data. *)
+    | inr err => C.Ret @@ Some read (* We wait for more data. *)
     end
   end).
 

@@ -1,10 +1,12 @@
 Require Import Coq.Lists.List.
+Require Import Coq.Strings.Ascii.
 Require Import ErrorHandlers.All.
 Require Import FunctionNinjas.All.
 Require Import LString.All.
 
 Import ListNotations.
 Local Open Scope type.
+Local Open Scope char.
 
 (** The kind of HTTP methods. *)
 Module Method.
@@ -73,42 +75,48 @@ Record t : Set := New {
   command : Command.t;
   headers : list Header.t }.
 
-Fixpoint parse_aux (command : Command.t) (headers : list Header.t)
+Fixpoint parse_headers (command : Command.t) (headers : list Header.t)
   (lines : list LString.t) : t + LString.t :=
   match lines with
   | [] => inr @@ LString.s "empty line expected"
+  | [_] => inr @@ LString.s "at least one more line expected"
+  | [] :: _ => inl @@ New command headers (* Final empty line. *)
   | line :: lines =>
-    let line := LString.trim line in
-    if LString.is_empty line then
-      let body := List.fold_left (fun s1 s2 =>
-        s1 ++ LString.Char.n :: s2)
-        lines [] in
-      inl @@ New command headers
-    else
-      Sum.bind (Header.parse line) (fun header =>
-      let headers :=
-        match header with
-        | None => headers
-        | Some header => header :: headers
-        end in
-      parse_aux command headers lines)
+    Sum.bind (Header.parse line) (fun header =>
+    let headers :=
+      match header with
+      | None => headers
+      | Some header => header :: headers
+      end in
+    parse_headers command headers lines)
   end.
 
 Definition parse (request : LString.t) : t + LString.t :=
   let lines := LString.split request LString.Char.n in
-  match lines with
+  match List.map LString.trim lines with
   | [] => inr @@ LString.s "the request is empty"
   | command :: lines =>
     Sum.bind (Command.parse command) (fun command =>
-    parse_aux command [] lines)
+    parse_headers command [] lines)
   end.
 
-Definition test_parse : parse @@ LString.s "GET /page.html HTTP/1.0
+Module Test.
+  Definition test_parse1 : parse @@ LString.s "GET /page.html HTTP/1.0
 Host: example.com
 Referer: http://example.com/
 User-Agent: CERN-LineMode/2.15 libwww/2.17b3
 
 " = inl {|
-    command := (Method.Get, LString.s "/page.html", LString.s "HTTP/1.0");
-    headers := [Header.New Header.Kind.Host (LString.s "example.com")] |} :=
-  eq_refl.
+      command := (Method.Get, LString.s "/page.html", LString.s "HTTP/1.0");
+      headers := [Header.New Header.Kind.Host (LString.s "example.com")] |} :=
+    eq_refl.
+
+  Definition test2 := LString.s "GET /page.html HTTP/1.0
+
+
+".
+
+  Compute test2.
+  Compute parse test2.
+  Compute List.map LString.trim @@ LString.split test2 LString.Char.n.
+End Test.
