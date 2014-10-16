@@ -9,6 +9,7 @@ Require Import Concurrency.Computation.
 Require Import Concurrency.Events.
 Require Import Concurrency.StdLib.
 Require "Answer".
+Require "FileName".
 Require "Request".
 
 Import ListNotations.
@@ -18,11 +19,7 @@ Local Open Scope string.
 Local Open Scope char.
 Local Open Scope list.
 
-Module FileName.
-  Definition extension (file_name : LString.t) : LString.t :=
-    List.last (LString.split file_name ".") (LString.s "").
-End FileName.
-
+(** Close a client. *)
 Definition close_client (client : ClientSocketId.t) : C.t [] unit :=
   ClientSocket.close client (fun is_closed =>
   let message :=
@@ -32,6 +29,7 @@ Definition close_client (client : ClientSocketId.t) : C.t [] unit :=
       LString.s "Client cannot be closed." in
   Log.write message (fun _ => C.Ret tt)).
 
+(** Answer to a client. *)
 Definition handle_client (website_dir : LString.t) (client : ClientSocketId.t)
   : C.t [] unit :=
   do! Log.write (LString.s "Client connected.") (fun _ => C.Ret tt) in
@@ -65,6 +63,7 @@ Definition handle_client (website_dir : LString.t) (client : ClientSocketId.t)
     end
   end).
 
+(** The web server. *)
 Definition program (argv : list LString.t) : C.t [] unit :=
   match argv with
   | [_; website_dir] =>

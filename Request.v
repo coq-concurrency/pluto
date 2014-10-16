@@ -6,12 +6,13 @@ Require Import LString.All.
 Import ListNotations.
 Local Open Scope type.
 
-(** The kind of HTTP method. *)
+(** The kind of HTTP methods. *)
 Module Method.
   (** For now, only the GET method is handled. *)
   Inductive t : Set :=
   | Get : t.
 
+  (** Recognize the method name. *)
   Definition of_string (method : LString.t) : t + LString.t :=
     if LString.eqb method (LString.s "GET") then
       inl Get
@@ -19,9 +20,12 @@ Module Method.
       inr (LString.s "unknown method " ++ method).
 End Method.
 
+(** The command is the first line of an HTTP request. *)
 Module Command.
+  (** A command is the method, the url and the HTTP version. *)
   Definition t : Set := Method.t * LString.t * LString.t.
 
+  (** Trim and parse a command. *)
   Definition parse (command : LString.t) : t + LString.t :=
     match List.map LString.trim (LString.split (LString.trim command) " ") with
     | [method; arg1; arg2] =>
@@ -31,11 +35,14 @@ Module Command.
     end.
 End Command.
 
+(** One header. *)
 Module Header.
   Module Kind.
+    (** For now, only the host header is handled. *)
     Inductive t : Set :=
     | Host : t.
 
+    (** Try to recognize a header (case insensitive). *)
     Definition of_string (kind : LString.t) : t + LString.t :=
       let kind := LString.down_case kind in
       if LString.eqb kind (LString.s "host") then
@@ -44,10 +51,12 @@ Module Header.
         inr (LString.s "unknown header kind " ++ kind).
   End Kind.
 
+  (** A header is a kind and a parameter. *)
   Record t : Set := New {
     kind : Kind.t;
     value : LString.t }.
 
+  (** Trim and parse a header. May return [None] if the header is not known. *)
   Definition parse (header : LString.t) : option t + LString.t :=
     match List.map LString.trim (LString.split_limit header ":" 2) with
     | [kind; value] =>
