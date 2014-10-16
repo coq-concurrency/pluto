@@ -11,6 +11,7 @@ Require Import Concurrency.StdLib.
 Require "Answer".
 Require "FileName".
 Require "Request".
+Require "Url".
 
 Import ListNotations.
 Import C.Notations.
@@ -19,7 +20,17 @@ Local Open Scope string.
 Local Open Scope char.
 Local Open Scope list.
 
-(** Answer to a client. *)
+(** Answer a message to a client. *)
+Definition answer_client (client : ClientSocketId.t) (url : LString.t)
+  (message : LString.t) : C.t [] unit :=
+  ClientSocket.write client message (fun is_success =>
+  if negb is_success then
+    let message := LString.s "Answer failed to be sent for " ++ url in
+    Log.write message (fun _ => C.Ret tt)
+  else
+    C.Ret tt).
+
+(** Handle a client. *)
 Definition handle_client (website_dir : LString.t) (client : ClientSocketId.t)
   : C.t [] unit :=
   do! Log.write (LString.s "Client connected.") (fun _ => C.Ret tt) in
@@ -32,27 +43,30 @@ Definition handle_client (website_dir : LString.t) (client : ClientSocketId.t)
     let read := read ++ line in
     match Request.parse read with
     | inl (Request.New (Request.Method.Get, url, protocol) headers) =>
-      let file_name := website_dir ++ url in
-      let last_character := List.last file_name "/" in
-      let file_name := match last_character with
-        | "/" => file_name ++ LString.s "index.html"
-        | _ => file_name
+      do!
+        let url := website_dir ++ url in
+        match Url.parse url with
+        | inl (Url.New file_name _) =>
+          let last_character := List.last file_name "/" in
+          let file_name := match last_character with
+            | "/" => file_name ++ LString.s "index.html"
+            | _ => file_name
+            end in
+          do! Log.write (LString.s "Reading the file: '" ++ file_name ++ LString.s "'")
+            (fun _ => C.Ret tt) in
+          File.read file_name (fun content =>
+          let answer := Answer.to_string @@ match content with
+            | None => Answer.error
+            | Some content =>
+              let mime_type := MimeType.of_extension @@ FileName.extension file_name in
+              Answer.ok mime_type content
+            end in
+          answer_client client url answer)
+        | inr err =>
+          let message := LString.s "In '" ++ url ++ LString.s "': " ++ err in
+          do! Log.write message (fun _ => C.Ret tt) in
+          answer_client client url @@ Answer.to_string Answer.error
         end in
-      do! Log.write (LString.s "Reading the file: '" ++ file_name ++ LString.s "'")
-        (fun _ => C.Ret tt) in
-      do! File.read file_name (fun content =>
-        let answer := Answer.to_string @@ match content with
-          | None => Answer.error
-          | Some content =>
-            let mime_type := MimeType.of_extension @@ FileName.extension file_name in
-            Answer.ok mime_type content
-          end in
-        ClientSocket.write client answer (fun is_success =>
-          if negb is_success then
-            let message := LString.s "Answer failed to be sent for " ++ url in
-            Log.write message (fun _ => C.Ret tt)
-          else
-            C.Ret tt)) in
       (* We continue to listen, starting again with empty data. *)
       C.Ret @@ Some []
     | inr err => C.Ret @@ Some read (* We wait for more data. *)
