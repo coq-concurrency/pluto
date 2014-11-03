@@ -93,5 +93,5 @@ Definition program (argv : list LString.t) : C.t [] unit :=
 (** * Extraction. *)
 Require Import Extraction.
 
-Definition http_server := Extraction.run _ Memory.Nil program.
-Extraction "extraction/httpServer" http_server.
+Definition coq_web_server := Extraction.run _ Memory.Nil program.
+Extraction "extraction/coqWebServer" coq_web_server.

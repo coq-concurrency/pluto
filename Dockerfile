@@ -45,10 +45,8 @@ RUN opam repo add coq-stable https://github.com/coq/opam-coq-repo.git
 RUN opam repo add coq-unstable https://github.com/coq/opam-coq-repo-unstable.git
 
 # Dependencies
-RUN opam install -y coq:error-handlers coq:function-ninjas coq:iterable coq:list-string coq:concurrency:system
-
-# Proxy
-RUN opam install -y coq:concurrency:proxy
+RUN opam install -y coq:error-handlers coq:function-ninjas coq:iterable coq:list-string
+RUN opam install -y coq:concurrency:proxy coq:concurrency:system
 
 # Build
 ADD . /root/web-server
@@ -58,4 +56,4 @@ WORKDIR extraction
 RUN eval `opam config env`; make
 
 # Run the server
-CMD ./httpServer.native ../html
+CMD ./coqWebServer.native ../html
