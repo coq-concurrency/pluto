@@ -1,2 +1,2 @@
 all:
-	ocamlbuild httpServer.native -use-ocamlfind -package base64,str,unix
+	ocamlbuild httpServer.native -use-ocamlfind -package base64,num,str,unix

@@ -1,6 +1,9 @@
 Makefile
 extraction/*.ml
 extraction/*.mli
+extraction/*.native
+extraction/_build
+html/
 *.bak
 *.vo
 *.glob

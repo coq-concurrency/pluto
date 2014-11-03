@@ -54,6 +54,8 @@ RUN opam install -y coq:concurrency:proxy
 ADD . /root/web-server
 WORKDIR /root/web-server
 RUN eval `opam config env`; ./configure.sh && make -j
+WORKDIR extraction
+RUN eval `opam config env`; make
 
-# Continuous build
-CMD eval `opam config env`; ./configure.sh && while inotifywait *.v; do make; done
+# Run the server
+CMD ./httpServer.native ../html
