@@ -4,7 +4,7 @@ Require Import Coq.Strings.Ascii.
 Require Import Coq.Strings.String.
 Require Import ErrorHandlers.All.
 Require Import FunctionNinjas.All.
-Require Import LString.All.
+Require Import ListString.All.
 Require Import Concurrency.Computation.
 Require Import Concurrency.Events.
 Require Import Concurrency.StdLib.

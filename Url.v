@@ -2,7 +2,7 @@ Require Import Coq.Lists.List.
 Require Import Coq.Strings.Ascii.
 Require Import ErrorHandlers.All.
 Require Import FunctionNinjas.All.
-Require Import LString.All.
+Require Import ListString.All.
 
 Import ListNotations.
 Local Open Scope char.

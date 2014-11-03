@@ -1,5 +1,5 @@
 Require Import Coq.Lists.List.
-Require Import LString.All.
+Require Import ListString.All.
 
 Record t : Set := New {
   type : LString.t;
