@@ -7,4 +7,4 @@ Add some HTML content to `html/`, build and run the server:
     docker build --tag=pluto .
     docker run -ti -p 80:80 pluto
 
-Your website should be available on [localhost](http://localhost/), and served by the first web server written in Coq.
+Your website should be available on [localhost](http://localhost/).
