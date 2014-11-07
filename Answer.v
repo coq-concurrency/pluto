@@ -65,7 +65,7 @@ Definition ok (mime_type : MimeType.t) (content : LString.t) : t := {|
   status := Status.OK;
   headers := [
     Header.New Header.Kind.ContentType (MimeType.to_string mime_type);
-    Header.New Header.Kind.ContentLength (LString.of_N 10 12 @@ Iterable.length content);
+    Header.New Header.Kind.ContentLength (LString.of_N 10 12 None @@ Iterable.length content);
     Header.New Header.Kind.Server (LString.s "Coq")];
   body := content |}.
 
@@ -76,6 +76,6 @@ Definition error : t :=
     status := Status.NotFound;
     headers := [
       Header.New Header.Kind.ContentType (MimeType.to_string mime_type);
-      Header.New Header.Kind.ContentLength (LString.of_N 10 12 @@ Iterable.length content);
+      Header.New Header.Kind.ContentLength (LString.of_N 10 12 None @@ Iterable.length content);
       Header.New Header.Kind.Server (LString.s "Coq")];
     body := content |}.

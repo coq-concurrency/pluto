@@ -63,7 +63,7 @@ Module Header.
     match List.map LString.trim (LString.split_limit header ":" 2) with
     | [kind; value] =>
       match Kind.of_string kind with
-      | inl kind => inl @@ Some @@ New kind value
+      | inl kind => inl @@ Some (New kind value)
       | inr _ => inl None
       end
     | _ => inr @@ LString.s "two elements expected"
@@ -101,7 +101,7 @@ Definition parse (request : LString.t) : t + LString.t :=
   end.
 
 Module Test.
-  Definition test_parse1 : parse @@ LString.s "GET /page.html HTTP/1.0
+  Definition test_parse : parse @@ LString.s "GET /page.html HTTP/1.0
 Host: example.com
 Referer: http://example.com/
 User-Agent: CERN-LineMode/2.15 libwww/2.17b3
@@ -110,13 +110,4 @@ User-Agent: CERN-LineMode/2.15 libwww/2.17b3
       command := (Method.Get, LString.s "/page.html", LString.s "HTTP/1.0");
       headers := [Header.New Header.Kind.Host (LString.s "example.com")] |} :=
     eq_refl.
-
-  Definition test2 := LString.s "GET /page.html HTTP/1.0
-
-
-".
-
-  Compute test2.
-  Compute parse test2.
-  Compute List.map LString.trim @@ LString.split test2 LString.Char.n.
 End Test.

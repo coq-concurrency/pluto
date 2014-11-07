@@ -5,23 +5,23 @@ RUN apt-get update && apt-get upgrade -y
 RUN apt-get install -y gcc make git
 RUN apt-get install -y curl m4 ruby
 
-# OCaml 4.02.0
+# OCaml
 WORKDIR /root
-RUN curl -L https://github.com/ocaml/ocaml/archive/4.02.0.tar.gz |tar -xz
-WORKDIR /root/ocaml-4.02.0
+RUN curl -L https://github.com/ocaml/ocaml/archive/4.02.1.tar.gz |tar -xz
+WORKDIR /root/ocaml-4.02.1
 RUN ./configure
 RUN make world.opt
 RUN make install
 
-# Camlp4 4.02
+# Camlp4
 WORKDIR /root
-RUN curl -L https://github.com/ocaml/camlp4/archive/4.02.0+1.tar.gz |tar -xz
-WORKDIR /root/camlp4-4.02.0-1
+RUN curl -L https://github.com/ocaml/camlp4/archive/4.02.1+1.tar.gz |tar -xz
+WORKDIR /root/camlp4-4.02.1-1
 RUN ./configure
 RUN make all
 RUN make install
 
-# OPAM 1.2
+# OPAM
 WORKDIR /root
 RUN curl -L https://github.com/ocaml/opam/archive/1.2.0.tar.gz |tar -xz
 WORKDIR opam-1.2.0
@@ -41,11 +41,13 @@ RUN opam install -y coq
 RUN apt-get install -y inotify-tools
 
 # Coq repositories
-RUN opam repo add coq-stable https://github.com/coq/opam-coq-repo.git
-RUN opam repo add coq-unstable https://github.com/coq/opam-coq-repo-unstable.git
+RUN echo 2
+RUN opam repo add coq-stable https://github.com/coq/repo-stable.git
+RUN opam repo add coq-testing https://github.com/coq/repo-testing.git
+RUN opam repo add coq-unstable https://github.com/coq/repo-unstable.git
 
 # Dependencies
-RUN opam install -y coq:error-handlers coq:function-ninjas coq:iterable coq:list-string
+RUN opam install -y coq:error-handlers coq:function-ninjas coq:iterable coq:list-string coq:moment
 RUN opam install -y coq:concurrency:proxy coq:concurrency:system
 
 # Build
