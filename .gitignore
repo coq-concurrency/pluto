@@ -1,3 +1,4 @@
+opam*/
 Makefile
 extraction/*.ml
 extraction/*.mli

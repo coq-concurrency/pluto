@@ -57,17 +57,21 @@ Definition handle_client (website_dir : LString.t) (client : ClientSocketId.t)
           do! Log.write (LString.s "Reading the file: '" ++ file_name ++ LString.s "'")
             (fun _ => C.Ret tt) in
           File.read file_name (fun content =>
-          let answer := Answer.to_string @@ match content with
-            | None => Answer.error
-            | Some content =>
-              let mime_type := MimeType.of_extension @@ FileName.extension file_name in
-              Answer.ok mime_type content
+          let answer time :=
+            let time := Moment.of_epoch @@ Z.of_N time in
+            Answer.to_string @@ match content with
+              | None => Answer.error time
+              | Some content =>
+                let mime_type := MimeType.of_extension @@ FileName.extension file_name in
+                Answer.ok mime_type content time
             end in
-          answer_client client url answer)
+          Time.get (fun time => answer_client client url @@ answer time))
         | inr err =>
           let message := LString.s "In '" ++ url ++ LString.s "': " ++ err in
           do! Log.write message (fun _ => C.Ret tt) in
-          answer_client client url @@ Answer.to_string Answer.error
+          Time.get (fun time =>
+          let time := Moment.of_epoch @@ Z.of_N time in
+          answer_client client url @@ Answer.to_string @@ Answer.error time)
         end in
       (* We continue to listen, starting again with empty data. *)
       C.Ret @@ Some []
@@ -81,7 +85,7 @@ Definition program (argv : list LString.t) : C.t [] unit :=
   | [_; website_dir] =>
     Time.get (fun time =>
     let time := Moment.Print.rfc1123 @@ Moment.of_epoch @@ Z.of_N time in
-    let welcome_message := LString.s "Coq server starting on " ++ website_dir ++
+    let welcome_message := LString.s "Pluto starting on " ++ website_dir ++
       LString.s " at " ++ time ++ LString.s "." in
     Log.write welcome_message (fun _ =>
     ServerSocket.bind 80 (fun client =>
