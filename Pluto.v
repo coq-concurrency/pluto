@@ -1,4 +1,4 @@
-(** A simple HTTP web server. *)
+(** The Pluto HTTP server. *)
 Require Import Coq.Lists.List.
 Require Import Coq.Strings.Ascii.
 Require Import Coq.Strings.String.
@@ -98,5 +98,5 @@ Definition program (argv : list LString.t) : C.t [] unit :=
 (** * Extraction. *)
 Require Import Extraction.
 
-Definition coq_web_server := Extraction.run _ Memory.Nil program.
-Extraction "extraction/coqWebServer" coq_web_server.
+Definition pluto := Extraction.run _ Memory.Nil program.
+Extraction "extraction/pluto" pluto.

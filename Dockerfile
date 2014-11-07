@@ -51,11 +51,11 @@ RUN opam install -y coq:error-handlers coq:function-ninjas coq:iterable coq:list
 RUN opam install -y coq:concurrency:proxy coq:concurrency:system
 
 # Build
-ADD . /root/web-server
-WORKDIR /root/web-server
+ADD . /root/pluto
+WORKDIR /root/pluto
 RUN eval `opam config env`; ./configure.sh && make -j
 WORKDIR extraction
 RUN eval `opam config env`; make
 
 # Run the server
-CMD ./coqWebServer.native ../html
+CMD ./pluto.native ../html

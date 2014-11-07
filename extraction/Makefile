@@ -1,2 +1,2 @@
 all:
-	ocamlbuild coqWebServer.native -use-ocamlfind -package base64,num,str,unix
+	ocamlbuild pluto.native -use-ocamlfind -package base64,num,str,unix
