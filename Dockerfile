@@ -41,7 +41,7 @@ RUN opam install -y coq
 RUN apt-get install -y inotify-tools
 
 # Coq repositories
-RUN echo 2
+RUN echo 3
 RUN opam repo add coq-stable https://github.com/coq/repo-stable.git
 RUN opam repo add coq-testing https://github.com/coq/repo-testing.git
 RUN opam repo add coq-unstable https://github.com/coq/repo-unstable.git
@@ -58,4 +58,5 @@ WORKDIR extraction
 RUN eval `opam config env`; make
 
 # Run the server
-CMD ./pluto.native ../html
+EXPOSE 80
+CMD eval `opam config env`; ./pluto.native 80 ../html

@@ -79,24 +79,33 @@ Definition handle_client (website_dir : LString.t) (client : ClientSocketId.t)
     end
   end).
 
+(** Display usage informations and quit. *)
+Definition print_usage (_ : unit) : C.t [] unit :=
+  let usage := LString.s "pluto port folder
+  port: the port used by the server (like 80)
+  folder: the folder of the website to serve" in
+  Log.write usage (fun _ => C.Exit tt).
+
 (** The web server. *)
 Definition program (argv : list LString.t) : C.t [] unit :=
   match argv with
-  | [_; website_dir] =>
-    Time.get (fun time =>
-    let time := Moment.Print.rfc1123 @@ Moment.of_epoch @@ Z.of_N time in
-    let welcome_message := LString.s "Pluto starting on " ++ website_dir ++
-      LString.s " at " ++ time ++ LString.s "." in
-    Log.write welcome_message (fun _ =>
-    ServerSocket.bind 80 (fun client =>
-      match client with
-      | None =>
-        Log.write (LString.s "Server socket failed.") (fun _ => C.Exit tt)
-      | Some client => handle_client website_dir client
-      end)))
-  | _ =>
-    Log.write (LString.s "Exactly one parameter expected: the website folder.") (fun _ =>
-    C.Exit tt)
+  | [_; port; website_dir] =>
+    match LString.to_N 10 port with
+    | None => print_usage tt
+    | Some port =>
+      Time.get (fun time =>
+      let time := Moment.Print.rfc1123 @@ Moment.of_epoch @@ Z.of_N time in
+      let welcome_message := LString.s "Pluto starting on " ++ website_dir ++
+        LString.s " at " ++ time ++ LString.s "." in
+      Log.write welcome_message (fun _ =>
+      ServerSocket.bind port (fun client =>
+        match client with
+        | None =>
+          Log.write (LString.s "Server socket failed.") (fun _ => C.Exit tt)
+        | Some client => handle_client website_dir client
+        end)))
+    end
+  | _ => print_usage tt
   end.
 
 (** * Extraction. *)
