@@ -14,9 +14,9 @@ Install Pluto:
 
 Run it on some `html/` folder:
 
-    pluto.native html/
+    pluto.native 8000 html/
 
-Your website is now available on [localhost](http://localhost/).
+Your website is now available on [localhost:8000](http://localhost:8000/).
 
 ## Run with Docker
 Add some HTML content to `html/`, build and run the server:
