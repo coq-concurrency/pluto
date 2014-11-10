@@ -92,13 +92,14 @@ Definition program (argv : list LString.t) : C.t [] unit :=
   | [_; port; website_dir] =>
     match LString.to_N 10 port with
     | None => print_usage tt
-    | Some port =>
+    | Some port_number =>
       Time.get (fun time =>
       let time := Moment.Print.rfc1123 @@ Moment.of_epoch @@ Z.of_N time in
       let welcome_message := LString.s "Pluto starting on " ++ website_dir ++
-        LString.s " at " ++ time ++ LString.s "." in
+        LString.s ", port " ++ port ++
+        LString.s ", at " ++ time ++ LString.s "." in
       Log.write welcome_message (fun _ =>
-      ServerSocket.bind port (fun client =>
+      ServerSocket.bind port_number (fun client =>
         match client with
         | None =>
           Log.write (LString.s "Server socket failed.") (fun _ => C.Exit tt)
