@@ -9,3 +9,4 @@ html/
 *.vo
 *.glob
 *.v.d
+*.aux

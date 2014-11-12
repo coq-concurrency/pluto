@@ -10,10 +10,10 @@ Require Import Concurrency.Computation.
 Require Import Concurrency.Events.
 Require Import Concurrency.StdLib.
 Require Import Moment.All.
-Require "Answer".
-Require "FileName".
-Require "Request".
-Require "Url".
+Require Answer.
+Require FileName.
+Require Request.
+Require Url.
 
 Import ListNotations.
 Import C.Notations.
@@ -97,7 +97,7 @@ Definition program (argv : list LString.t) : C.t [] unit :=
       let time := Moment.Print.rfc1123 @@ Moment.of_epoch @@ Z.of_N time in
       let welcome_message := LString.s "Pluto starting on " ++ website_dir ++
         LString.s ", port " ++ port ++
-        LString.s ", at " ++ time ++ LString.s "." in
+        LString.s ", on " ++ time ++ LString.s "." in
       Log.write welcome_message (fun _ =>
       ServerSocket.bind port_number (fun client =>
         match client with
@@ -110,7 +110,7 @@ Definition program (argv : list LString.t) : C.t [] unit :=
   end.
 
 (** * Extraction. *)
-Require Import Extraction.
+Require Import Concurrency.Extraction.
 
-Definition pluto := Extraction.run _ Memory.Nil program.
+Definition pluto := Extraction.run Memory.Nil program.
 Extraction "extraction/pluto" pluto.

@@ -4,7 +4,7 @@ Require Import FunctionNinjas.All.
 Require Import Iterable.All.
 Require Import ListString.All.
 Require Import Moment.All.
-Require "MimeType".
+Require MimeType.
 
 Import ListNotations.
 Local Open Scope string.
