@@ -5,7 +5,6 @@ A web server written in Coq.
 Add the Coq repositories:
 
     opam repo add coq-stable https://github.com/coq/repo-stable.git
-    opam repo add coq-testing https://github.com/coq/repo-testing.git
     opam repo add coq-unstable https://github.com/coq/repo-unstable.git
 
 Install Pluto:
