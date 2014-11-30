@@ -1,4 +1,4 @@
-FROM ubuntu:14.10
+FROM ubuntu
 MAINTAINER Guillaume Claret
 
 RUN apt-get update && apt-get upgrade -y
@@ -43,7 +43,6 @@ RUN apt-get install -y inotify-tools
 # Coq repositories
 RUN echo 4
 RUN opam repo add coq-stable https://github.com/coq/repo-stable.git
-RUN opam repo add coq-testing https://github.com/coq/repo-testing.git
 RUN opam repo add coq-unstable https://github.com/coq/repo-unstable.git
 
 # Dependencies
