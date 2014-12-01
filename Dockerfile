@@ -47,15 +47,21 @@ RUN opam repo add coq-unstable https://github.com/coq/repo-unstable.git
 
 # Dependencies
 RUN opam install -y coq:error-handlers coq:function-ninjas coq:iterable coq:list-string coq:moment
-RUN opam install -y coq:concurrency:proxy coq:concurrency:system
+#RUN opam install -y coq:concurrency:proxy coq:concurrency:system
+WORKDIR /root
+RUN echo 2
+RUN curl -L https://github.com/coq-concurrency/system/archive/game-specification.tar.gz |tar -xz
+WORKDIR system-game-specification
+RUN eval `opam config env`; ruby pp.rb && ./configure.sh && make -j && make install
 
 # Build
 ADD . /root/pluto
 WORKDIR /root/pluto
-RUN eval `opam config env`; ./configure.sh && make -j
-WORKDIR extraction
-RUN eval `opam config env`; make
+# RUN eval `opam config env`; ./configure.sh && make -j
+CMD while inotifywait *.v; do eval `opam config env`; make clean; ./configure.sh && make -j; done
+# WORKDIR extraction
+# RUN eval `opam config env`; make
 
 # Run the server
-EXPOSE 80
-CMD eval `opam config env`; ./pluto.native 80 ../html
+# EXPOSE 80
+# CMD eval `opam config env`; ./pluto.native 80 ../html
