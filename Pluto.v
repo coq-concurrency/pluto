@@ -90,6 +90,7 @@ Definition print_usage (_ : unit) : C.t unit :=
   folder: the folder of the website to serve" in
   C.Send Command.Write usage.
 
+(** The loop to accept clients on the server socket. *)
 Fixpoint accept_clients (website_dir : LString.t) (server : ServerSocketId.t)
   (fuel : nat) : C.t unit :=
   match fuel with
@@ -100,7 +101,8 @@ Fixpoint accept_clients (website_dir : LString.t) (server : ServerSocketId.t)
     | None => C.Send Command.Write (LString.s "Server socket failed.")
     | Some client =>
       do! C.Send Command.Write (LString.s "Client connected.") in
-      handle_client website_dir client (LString.s "") 10000
+      do! handle_client website_dir client (LString.s "") 10 in
+      accept_clients website_dir server fuel
     end
   end.
 
@@ -122,7 +124,7 @@ Definition program (argv : list LString.t) : C.t unit :=
       | None => C.Send Command.Write (LString.s "THe server socket cannot bind.")
       | Some server =>
         do! C.Send Command.Write (LString.s "Server socket bound.") in
-        accept_clients website_dir server 10000
+        accept_clients website_dir server 10
       end
     end
   | _ => print_usage tt
