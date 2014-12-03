@@ -79,14 +79,14 @@ Definition handle_client (website_dir : LString.t) (client : ClientSocketId.t)
   end.
 
 (** Display usage informations and quit. *)
-Definition print_usage (_ : unit) : C.t unit :=
+Definition print_usage : C.t unit :=
   let usage := LString.s "pluto port folder
   port: the port used by the server (like 80)
   folder: the folder of the website to serve" in
   C.Send Command.Write usage.
 
 (** The loop to accept clients on the server socket. *)
-Fixpoint accept_clients (website_dir : LString.t) (server : ServerSocketId.t)
+Definition accept_clients (website_dir : LString.t) (server : ServerSocketId.t)
   : C.t unit :=
   let! client := C.Send Command.ServerSocketAccept server in
   match client with
@@ -101,7 +101,7 @@ Definition program (argv : list LString.t) : C.t unit :=
   match argv with
   | [_; port; website_dir] =>
     match LString.to_N 10 port with
-    | None => print_usage tt
+    | None => print_usage
     | Some port_number =>
       let! time := C.Send Command.Time tt in
       let time := Moment.Print.rfc1123 @@ Moment.of_epoch @@ Z.of_N time in
@@ -117,7 +117,7 @@ Definition program (argv : list LString.t) : C.t unit :=
         accept_clients website_dir server
       end
     end
-  | _ => print_usage tt
+  | _ => print_usage
   end.
 
 (*(** * Extraction. *)

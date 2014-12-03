@@ -49,3 +49,34 @@ Definition handle_client (website_dir : LString.t) (client : ClientSocketId.t)
       apply answer_client_ok.
   - exact Run.Ret.
 Defined.
+
+Definition print_usage : Run.t Pluto.print_usage tt :=
+  Run.Send Command.Write _ tt.
+
+Definition accept_clients_ok (website_dir : LString.t) (server : ServerSocketId.t)
+  (client : ClientSocketId.t) (request : LString.t) (time : N)
+  (content : option LString.t) : Run.t (Pluto.accept_clients website_dir server) tt.
+  eapply Run.Bind.
+  exact (Run.Send Command.ServerSocketAccept server (Some client)).
+  eapply Run.Bind.
+  exact (Run.Send Command.Write _ tt).
+  exact (handle_client _ _ request time content).
+Defined.
+
+Definition program (path : LString.t) (port : LString.t) (website_dir : LString.t)
+  (starting_time : N) (server : ServerSocketId.t) (client : ClientSocketId.t)
+  (request : LString.t) (time : N) (content : option LString.t)
+  : Run.t (Pluto.program [path; port; website_dir]) tt.
+  unfold Pluto.program.
+  destruct (LString.to_N 10 port) as [port_number|].
+  - eapply Run.Bind.
+    exact (Run.Send Command.Time tt starting_time).
+    eapply Run.Bind.
+    exact (Run.Send Command.Write _ tt).
+    eapply Run.Bind.
+    exact (Run.Send Command.ServerSocketBind port_number (Some server)).
+    eapply Run.Bind.
+    exact (Run.Send Command.Write _ tt).
+    exact (accept_clients_ok website_dir server client request time content).
+  - exact print_usage.
+Defined.
