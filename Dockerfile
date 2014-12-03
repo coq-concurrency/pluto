@@ -49,7 +49,7 @@ RUN opam repo add coq-unstable https://github.com/coq/repo-unstable.git
 RUN opam install -y coq:error-handlers coq:function-ninjas coq:iterable coq:list-string coq:moment
 #RUN opam install -y coq:concurrency:proxy coq:concurrency:system
 WORKDIR /root
-RUN echo 4
+RUN echo 5
 RUN curl -L https://github.com/coq-concurrency/system/archive/game-specification.tar.gz |tar -xz
 WORKDIR system-game-specification
 RUN eval `opam config env`; ruby pp.rb && ./configure.sh && make -j && make install

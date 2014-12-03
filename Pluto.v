@@ -31,55 +31,50 @@ Definition answer_client (client : ClientSocketId.t) (url : LString.t)
   else
     C.Ret tt.
 
+(** The answer to send to a client. *)
+Definition answer (file_name : LString.t) (content : option LString.t)
+  (time : N) : LString.t :=
+  let time := Moment.of_epoch @@ Z.of_N time in
+  Answer.to_string @@ match content with
+  | None => Answer.error time
+  | Some content =>
+    let mime_type := MimeType.of_extension @@ FileName.extension file_name in
+    Answer.ok mime_type content time
+  end.
+
+Definition file_name_with_index (file_name : LString.t) : LString.t :=
+  let last_character := List.last file_name "/" in
+  match last_character with
+  | "/" => file_name ++ LString.s "index.html"
+  | _ => file_name
+  end.
+
 (** Handle a client. *)
-Fixpoint handle_client (website_dir : LString.t) (client : ClientSocketId.t)
-  (read : LString.t) (fuel : nat) : C.t unit :=
-  match fuel with
-  | O => C.Ret tt
-  | S fuel =>
-    let! request := C.Send Command.ClientSocketRead client in
-    match request with
-    | None =>
-      (* We stop to listen to the socket in case of error. *)
-      C.Send Command.Write (LString.s "The client is closed.")
-    | Some line =>
-      let read := read ++ line in
-      match Request.parse read with
-      | inl (Request.New (Request.Method.Get, url, protocol) headers) =>
-        do!
-          let url := website_dir ++ url in
-          match Url.parse url with
-          | inl (Url.New file_name _) =>
-            let last_character := List.last file_name "/" in
-            let file_name := match last_character with
-              | "/" => file_name ++ LString.s "index.html"
-              | _ => file_name
-              end in
-            do! C.Send Command.Write (LString.s "Reading the file: '" ++ file_name ++ LString.s "'") in
-            let! content := C.Send Command.FileRead file_name in
-            let answer time :=
-              let time := Moment.of_epoch @@ Z.of_N time in
-              Answer.to_string @@ match content with
-                | None => Answer.error time
-                | Some content =>
-                  let mime_type := MimeType.of_extension @@ FileName.extension file_name in
-                  Answer.ok mime_type content time
-              end in
-            let! time := C.Send Command.Time tt in
-            answer_client client url @@ answer time
-          | inr err =>
-            let message := LString.s "In '" ++ url ++ LString.s "': " ++ err in
-            do! C.Send Command.Write message in
-            let! time := C.Send Command.Time tt in
-            let time := Moment.of_epoch @@ Z.of_N time in
-            answer_client client url @@ Answer.to_string @@ Answer.error time
-          end in
-        (* We continue to listen, starting again with empty data. *)
-        handle_client website_dir client [] fuel
-      | inr _ =>
-        (* We wait for more data. *)
-        handle_client website_dir client read fuel
+Definition handle_client (website_dir : LString.t) (client : ClientSocketId.t)
+  : C.t unit :=
+  let! request := C.Send Command.ClientSocketRead client in
+  match request with
+  | None =>
+    (* We stop to listen to the socket in case of error. *)
+    C.Send Command.Write (LString.s "The client is closed.")
+  | Some request =>
+    match Request.parse request with
+    | inl (Request.New (Request.Method.Get, url, protocol) headers) =>
+      let! time := C.Send Command.Time tt in
+      let full_url := website_dir ++ url in
+      match Url.parse full_url with
+      | inl (Url.New file_name _) =>
+        let file_name := file_name_with_index file_name in
+        do! C.Send Command.Write (LString.s "Reading the file: '" ++ file_name ++ LString.s "'") in
+        let! content := C.Send Command.FileRead file_name in
+        answer_client client full_url @@ answer file_name content time
+      | inr err =>
+        let message := LString.s "In '" ++ full_url ++ LString.s "': " ++ err in
+        do! C.Send Command.Write message in
+        let time := Moment.of_epoch @@ Z.of_N time in
+        answer_client client full_url @@ Answer.to_string @@ Answer.error time
       end
+    | inr _ => C.Ret tt
     end
   end.
 
@@ -92,18 +87,13 @@ Definition print_usage (_ : unit) : C.t unit :=
 
 (** The loop to accept clients on the server socket. *)
 Fixpoint accept_clients (website_dir : LString.t) (server : ServerSocketId.t)
-  (fuel : nat) : C.t unit :=
-  match fuel with
-  | O => C.Ret tt
-  | S fuel =>
-    let! client := C.Send Command.ServerSocketAccept server in
-    match client with
-    | None => C.Send Command.Write (LString.s "Server socket failed.")
-    | Some client =>
-      do! C.Send Command.Write (LString.s "Client connected.") in
-      do! handle_client website_dir client (LString.s "") 10 in
-      accept_clients website_dir server fuel
-    end
+  : C.t unit :=
+  let! client := C.Send Command.ServerSocketAccept server in
+  match client with
+  | None => C.Send Command.Write (LString.s "Server socket failed.")
+  | Some client =>
+    do! C.Send Command.Write (LString.s "Client connected.") in
+    handle_client website_dir client
   end.
 
 (** The web server. *)
@@ -121,10 +111,10 @@ Definition program (argv : list LString.t) : C.t unit :=
       do! C.Send Command.Write welcome_message in
       let! server := C.Send Command.ServerSocketBind port_number in
       match server with
-      | None => C.Send Command.Write (LString.s "THe server socket cannot bind.")
+      | None => C.Send Command.Write (LString.s "The server socket cannot bind.")
       | Some server =>
         do! C.Send Command.Write (LString.s "Server socket bound.") in
-        accept_clients website_dir server 10
+        accept_clients website_dir server
       end
     end
   | _ => print_usage tt
