@@ -34,6 +34,7 @@ End Status.
 Module Header.
   Module Kind.
     Inductive t : Set :=
+    | CacheControl : t
     | ContentType : t
     | ContentLength : t
     | Date : t
@@ -41,6 +42,7 @@ Module Header.
 
     Definition to_string (kind : t) : LString.t :=
       LString.s @@ match kind with
+      | CacheControl => "Cache-Control"
       | ContentType => "Content-Type"
       | ContentLength => "Content-Length"
       | Date => "Date"
@@ -68,14 +70,21 @@ Definition to_string (answer : t) : LString.t :=
     [LString.s ""; body answer]).
 
 Definition ok (mime_type : MimeType.t) (content : LString.t) (time : Moment.t)
-  : t := {|
-  status := Status.OK;
-  headers := [
-    Header.New Header.Kind.ContentType (MimeType.to_string mime_type);
-    Header.New Header.Kind.ContentLength (LString.of_N 10 12 None @@ Iterable.length content);
-    Header.New Header.Kind.Date (Moment.Print.rfc1123 time);
-    Header.New Header.Kind.Server (LString.s "Coq")];
-  body := content |}.
+  : t :=
+  let cache_control :=
+    if LString.eqb (MimeType.to_string mime_type) (LString.s "text/html") then
+      LString.s "no-cache"
+    else
+      LString.s "max-age=604800, public" in
+  {|
+    status := Status.OK;
+    headers := [
+      Header.New Header.Kind.CacheControl cache_control;
+      Header.New Header.Kind.ContentType (MimeType.to_string mime_type);
+      Header.New Header.Kind.ContentLength (LString.of_N 10 12 None @@ Iterable.length content);
+      Header.New Header.Kind.Date (Moment.Print.rfc1123 time);
+      Header.New Header.Kind.Server (LString.s "Pluto")];
+    body := content |}.
 
 Definition error (time : Moment.t) : t :=
   let mime_type := MimeType.New (LString.s "text") (LString.s "plain") in
@@ -86,5 +95,5 @@ Definition error (time : Moment.t) : t :=
       Header.New Header.Kind.ContentType (MimeType.to_string mime_type);
       Header.New Header.Kind.ContentLength (LString.of_N 10 12 None @@ Iterable.length content);
       Header.New Header.Kind.Date (Moment.Print.rfc1123 time);
-      Header.New Header.Kind.Server (LString.s "Coq")];
+      Header.New Header.Kind.Server (LString.s "Pluto")];
     body := content |}.
