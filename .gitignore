@@ -1,7 +1,9 @@
 opam*/
 Makefile
+.coq-native
 extraction/*.ml
 extraction/*.mli
+extraction/*.byte
 extraction/*.native
 extraction/_build
 html/
