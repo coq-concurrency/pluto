@@ -84,7 +84,7 @@ Definition print_usage (_ : unit) : C.t [] unit :=
   let usage := LString.s "pluto port folder
   port: the port used by the server (like 80)
   folder: the folder of the website to serve" in
-  Log.write usage (fun _ => C.Exit tt).
+  Log.write usage (fun _ => C.Exit).
 
 (** The web server. *)
 Definition program (argv : list LString.t) : C.t [] unit :=
@@ -102,7 +102,7 @@ Definition program (argv : list LString.t) : C.t [] unit :=
       ServerSocket.bind port_number (fun client =>
         match client with
         | None =>
-          Log.write (LString.s "Server socket failed.") (fun _ => C.Exit tt)
+          Log.write (LString.s "Server socket failed.") (fun _ => C.Exit)
         | Some client => handle_client website_dir client
         end)))
     end
