@@ -40,6 +40,11 @@ Definition handle_client (website_dir : LString.t) (client : ClientSocketId.t)
   match request with
   | None =>
     do! Log.write (LString.s "The client is closed.") (fun _ => C.Ret tt) in
+    do! ClientSocket.close client (fun is_closed =>
+      if is_closed then
+        C.Ret tt
+      else
+        Log.write (LString.s "Could not close the socket.") (fun _ => C.Ret tt)) in
     C.Ret None (* We stop to listen to the socket in case of error. *)
   | Some line =>
     let read := read ++ line in
