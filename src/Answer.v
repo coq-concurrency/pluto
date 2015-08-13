@@ -88,7 +88,7 @@ Definition ok (mime_type : MimeType.t) (content : LString.t) (time : Moment.t)
 
 Definition error (time : Moment.t) : t :=
   let mime_type := MimeType.New (LString.s "text") (LString.s "plain") in
-  let content := LString.s "Error 404 (not found)." in
+  let content := LString.s "Error 404 (not found)." ++ [LString.Char.n] in
   {|
     status := Status.NotFound;
     headers := [
