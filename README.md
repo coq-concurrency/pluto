@@ -2,7 +2,7 @@
 A web server written in Coq.
 
 ## Run with OPAM
-Add the Coq repositories:
+Add the Coq repository:
 
     opam repo add coq-released https://coq.inria.fr/opam/released
 
