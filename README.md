@@ -4,12 +4,11 @@ A web server written in Coq.
 ## Run with OPAM
 Add the Coq repositories:
 
-    opam repo add coq-stable https://github.com/coq/repo-stable.git
-    opam repo add coq-unstable https://github.com/coq/repo-unstable.git
+    opam repo add coq-released https://coq.inria.fr/opam/released
 
 Install Pluto:
 
-    opam install coq:concurrency:pluto
+    opam install coq-concurrency-pluto
 
 Run it on some `html/` folder:
 
